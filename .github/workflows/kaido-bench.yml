@@ -1,0 +1,60 @@
+
+name: Kaido matchup benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      seeds:
+        description: "Semillas por enfrentamiento (cada una juega ambos puestos)"
+        required: true
+        default: "50"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    name: Kaido vs Buggy and Rocks
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Kaido vs Buggy
+        run: |
+          pnpm head-to-head \
+            "(Purple) Kaido - TCG Match Making EB05 2026-11-12 #5" \
+            "(Blue) Buggy - TCG Match Making EB05 2026-11-12 #3" \
+            "${{ inputs.seeds }}" | tee kaido-vs-buggy.txt
+
+      - name: Kaido vs Rocks
+        run: |
+          pnpm head-to-head \
+            "(Purple) Kaido - TCG Match Making EB05 2026-11-12 #5" \
+            "(Blue) Rocks.D.Xebec - TCG Match Making EB05 2026-11-12 #1" \
+            "${{ inputs.seeds }}" | tee kaido-vs-rocks.txt
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kaido-matchup-results
+          path: |
+            kaido-vs-buggy.txt
+            kaido-vs-rocks.txt
+          if-no-files-found: ignore
