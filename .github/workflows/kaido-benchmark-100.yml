@@ -1,0 +1,46 @@
+
+name: Kaido first 100 matchup games
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run paired 100-game Kaido benchmark
+        run: |
+          pnpm deck:benchmark run \
+            --deck "(Purple) Kaido - TCG Match Making EB05 2026-11-12 #5" \
+            --opponents "(Blue) Rocks.D.Xebec - TCG Match Making EB05 2026-11-12 #1,(Blue) Buggy - TCG Match Making EB05 2026-11-12 #3,(Red/Green) Monkey.D.Luffy - TCG Match Making EB05 2026-11-12 #2,(Red/Green) Luffy & Ace - Starter Deck 30,(Yellow) Enel - TCG Match Making EB05 2026-11-12 #6,(Red/Black) Sabo - TCG Match Making EB05 2026-11-12 #10,(Purple/Yellow) Donquixote Rosinante - TCG Match Making EB05 2026-11-12 #9,(Purple) Kaido - Official Feature Deck,(Green/Yellow) Nico Robin - TCG Match Making EB05 2026-11-12 #4,(Black) Monkey.D.Luffy - Official Feature Deck" \
+            --seeds 5 \
+            --jobs 4 \
+            --seed-prefix kaido-first100-2026-11-19 \
+            --output kaido-benchmark-100.json
+
+      - name: Upload benchmark report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kaido-benchmark-100
+          path: kaido-benchmark-100.json
+          if-no-files-found: error
