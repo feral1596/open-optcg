@@ -1,0 +1,54 @@
+
+name: Kaido decision diagnostics
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Kaido policy census
+        run: |
+          pnpm census --deck "(Purple) Kaido - TCG Match Making EB05 2026-11-12 #5" --json --output kaido-census.json
+
+      - name: Trace Buggy games
+        run: |
+          pnpm trace:match --p1 "(Purple) Kaido - TCG Match Making EB05 2026-11-12 #5" --p2 "(Blue) Buggy - TCG Match Making EB05 2026-11-12 #3" --seed kaido-buggy-a > kaido-buggy-a.txt
+          pnpm trace:match --p1 "(Purple) Kaido - TCG Match Making EB05 2026-11-12 #5" --p2 "(Blue) Buggy - TCG Match Making EB05 2026-11-12 #3" --seed kaido-buggy-b > kaido-buggy-b.txt
+
+      - name: Trace Rocks games
+        run: |
+          pnpm trace:match --p1 "(Purple) Kaido - TCG Match Making EB05 2026-11-12 #5" --p2 "(Blue) Rocks.D.Xebec - TCG Match Making EB05 2026-11-12 #1" --seed kaido-rocks-a > kaido-rocks-a.txt
+          pnpm trace:match --p1 "(Purple) Kaido - TCG Match Making EB05 2026-11-12 #5" --p2 "(Blue) Rocks.D.Xebec - TCG Match Making EB05 2026-11-12 #1" --seed kaido-rocks-b > kaido-rocks-b.txt
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kaido-decision-diagnostics
+          path: |
+            kaido-census.json
+            kaido-buggy-*.txt
+            kaido-rocks-*.txt
+          if-no-files-found: ignore
